@@ -2,6 +2,8 @@ import numpy as np
 import random
 import gmpy2
 from gmpy2 import mpz
+import math
+from sympy import ntt as pac
 
 hex_512_string = "F"*128
 hex_256_string = "F"*64
@@ -97,8 +99,16 @@ def conv_rou(k, prime):
 		print (rou)
 		return random.choice(rou)
 
-
-
+def calcWKS(k, w_k):
+	wk_list = list()
+	for i in range(k):
+		wk_list.append(mpz(w_k)**mpz(i))
+	return wk_list
+def calcWKSI(k, w_k):
+	wk_list = list()
+	for i in range(k):
+		wk_list.append(1//(mpz(w_k)**mpz(i)))
+	return wk_list
 
 def naiveNTT(p, k, w_k, A):
 	"""
@@ -147,29 +157,46 @@ def naiveNTT(p, k, w_k, A):
 		raise TypeError("Prime number is only supported up to 512 bits")
 	if not isinstance(k, int):
 		raise ValueError("Please enter an integer for k")
-	if not isinstance(w_k, int):
-		raise ValueError("Please enter an integer for w_k")
+
 
 
 	retA = np.zeros(k)
 	if k == 1:
 		return A
 
-	X_even = naiveFFT(p, k//2, (w_k)**2, A[::2])
-	X_odd = naiveFFT(p, k//2, (w_k)**2, A[1::2])
+	X_even = naiveNTT(p, k//2, w_k[0], A[::2])
+	X_odd = naiveNTT(p, k//2, w_k[0], A[1::2])
 
 	for i in range(k//2):
 
-		retA[i] = mpz( X_even[i] ) % p + ( ( mpz(w_k)**i ) * mpz( X_odd[i] ) ) % p
+		retA[i] = (mpz( X_even[i] ) + ( ( w_k[i] ) * mpz( X_odd[i] ) )) % p
 		
-		retA[i+k//2] = mpz( X_even[i] ) % p + ( ( mpz(w_k)**(i+k//2) ) * mpz( X_odd[i] ) ) % p
+		retA[i+k//2] = (mpz( X_even[i] ) + ( ( w_k[i+k//2] ) * mpz( X_odd[i] ) )) % p
 		
 	return retA
 
+def inverseNTT(p, k, w_k, B):
+	retB = np.zeros(k)
+	if k == 1:
+		return B
+	X_even = inverseNTT(p, k//2, (w_k**-2)/k, B[::2])
+	X_odd = inverseNTT(p, k//2, (w_k**-2)/k, B[1::2])
+
+	for i in range(k//2):
+		retB[i] = ((mpz( X_even[i] ) + ( (w_k**(i))/k ) * mpz( X_odd[i] ) )) % p
+		retB[i+k//2] = ((mpz( X_even[i] ) + ( ( (w_k ** ((i+k//2)))/k ) * mpz( X_odd[i] ) ))) % p
+	return retB % p
+
+
 if __name__ == '__main__':
 	print ("Vector length 2")
-	print (naiveFFT(7, 2**1, 6, [2, 4]))
-	print (naiveFFT(7, 2**1, 6, [2, 6]))
+	a = (calcWKS(2, 6))
+	print (naiveNTT(7, 2**1, a, [2, 4]))
+	print (naiveNTT(7, 2**1, a, [2, 6]))
 	print ("Vector length 4")
-	# print (naiveFFT(11, 2**2, 3, [2, 4, 6, 8]))
-	print (naiveFFT(5, 2**2, 2, [1, 4, 0, 0]))
+	a = (calcWKS(4, 2))
+	print (naiveNTT(11, 2**2, a, [2, 4, 6, 8]))
+	a = (calcWKS(4, 2))
+	print (naiveNTT(5, 2**2, a, [1, 4, 0, 0]))
+	#test with sympy ntt
+	print (pac([2,4], 7))
