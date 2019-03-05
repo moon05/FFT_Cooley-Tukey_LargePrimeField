@@ -175,17 +175,6 @@ def naiveNTT(p, k, w_k, A):
 		
 	return retA
 
-def inverseNTT(p, k, w_k, B):
-	retB = np.zeros(k)
-	if k == 1:
-		return B
-	X_even = inverseNTT(p, k//2, (w_k**-2)/k, B[::2])
-	X_odd = inverseNTT(p, k//2, (w_k**-2)/k, B[1::2])
-
-	for i in range(k//2):
-		retB[i] = ((mpz( X_even[i] ) + ( (w_k**(i))/k ) * mpz( X_odd[i] ) )) % p
-		retB[i+k//2] = ((mpz( X_even[i] ) + ( ( (w_k ** ((i+k//2)))/k ) * mpz( X_odd[i] ) ))) % p
-	return retB % p
 
 
 if __name__ == '__main__':
