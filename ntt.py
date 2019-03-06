@@ -35,18 +35,53 @@ PRIMES = [409, 571, 631, 829, 1489, 1999, 2341, 2971, 3529, 4621, 4789,\
 ###############################################################################
 
 def hasNewLineInList(l):
+	"""
+	Checks if list has the character new line as an element and a boolean
+	accordingly
+
+	Parameters
+	----------
+	l 		: a list
+	
+	Returns
+	-------
+	bool 	: new line found or not
+	"""
 	for i in l:
 		if "\n" in i:
 			return True
 	return False
 
 def convertStringsToIntsInList(l):
+	"""
+	Takes a large inetegers in String form. Converts them into inetgers and
+	then encapsulates them in mpz data format 
+
+	Parameters
+	----------
+	l	: list of large integers in String format
+
+	Returns
+	-------
+	j 	: list of large integers in mpz format
+	
+	"""
 	j = l.split()
 	for i in range(len(j)):
 		j[i] = mpz(int(j[i]))
 	return j
 
 def processCASE(strSuperList):
+	"""
+	Takes a list of lists containing test vectors, target vectors and nth root
+	of unity. Stores test vectors and target vectors in global dictionaries
+	with keys of form CASE_n. Disregards nth root of unity 
+
+	Parameters
+	----------
+	strSuperList	: list of lists containing different read in vectors
+	
+	"""
 	global TEST_CASES
 	global TEST_ANSWERS
 	s = "CASE_"
@@ -83,7 +118,7 @@ def bigBitArrayGenerator(len_arr, p, start=0):
 	
 	Returns
 	-------
-	array 		: array with random integers up untill prime number
+	list 		: list with random integers up untill prime number
 	
 	"""
 	tmp = list()
@@ -115,16 +150,14 @@ def check_prime(n):
 	
 	Returns
 	-------
-	b 		: boolean
+	bool 	: boolean
 	
 	"""
 	return gmpy2.is_prime(n)
 
 def generate_rou(k, prime):
 	"""
-	A convenience method to find out roots of unity. If found more than one
-	value returns a random value. With the current state of the function
-	it will consider 1 as a valid root of unity contestant.
+	Function to find out nth roots of unity.
 
 	Parameters
 	----------
@@ -133,24 +166,27 @@ def generate_rou(k, prime):
 	
 	Returns
 	-------
-	k 		: root of unity
+	k 		: list of nth root or roots of unity
 	
 	"""
-	rou = [[] for c in range(k)]
+	rou = [[] for c in range(k+1)]
 	a = range(0, prime)
-	for i in a:
-		print ("prime "+ str(i))
-		for j in range(k):
-			print ("power" + str(k))
-			b = ( (mpz(i)**mpz(j)) % mpz(prime) == 1)
+	for i in range(k+1):
+		for j in a:
+			b = ( (mpz(j)**mpz(i)) % mpz(prime) == 1)
 			if b:
-				rou[j].append(i)
+				rou[i].append(j)
 			else:
 				pass
-	counts = Counter(chain.from_iterable(rou))
+	counts = Counter(chain.from_iterable(rou[:-1]))
 	uniques = [k for k, c in counts.items() if c==1]
+	print (rou)
 	print (uniques)
-	return uniques
+	z = rou[-1]
+	for i in uniques:
+		if i in z:
+			z.remove(i)
+	return z
 
 def calcWKS(k, w_k):
 	"""
@@ -219,13 +255,7 @@ def naiveNTT(p, k, w_k, A):
 	if not isinstance(k, int):
 		raise ValueError("Please enter an integer for k")
 
-
-
-
-
-
-
-	retA = np.zeros(k)
+	retA = np.empty(k, dtype=object)
 	if k == 1:
 		return A
 
@@ -241,26 +271,19 @@ def naiveNTT(p, k, w_k, A):
 		
 	return retA
 
-
-
-
-
-
-
-
 def modexpNTT(p, k, w_k, A):
-	retA = np.zeros(k)
+	retA = np.empty(k, dtype=object)
 	if k == 1:
 		return A
 
-	X_even = modexpNTT(p, k//2, w_k[0]**2, A[::2])
-	X_odd = modexpNTT(p, k//2, w_k[0]**2, A[1::2])
+	X_even = modexpNTT(p, k//2, w_k**2, A[::2])
+	X_odd = modexpNTT(p, k//2, w_k**2, A[1::2])
 
 	for i in range(k//2):
 
-		retA[i] = pow((mpz( X_even[i] ) + ( ( w_k[i] ) * mpz( X_odd[i] ) )), 1, p)
+		retA[i] = pow((mpz( X_even[i] ) + ( ( w_k**(i) ) * mpz( X_odd[i] ) )), 1, p)
 		
-		retA[i+k//2] = pow((mpz( X_even[i] ) + ( ( w_k[i+k//2] ) * mpz( X_odd[i] ) )), 1, p)
+		retA[i+k//2] = pow((mpz( X_even[i] ) + ( ( w_k**(i+k//2) ) * mpz( X_odd[i] ) )), 1, p)
 		
 	return retA
 
@@ -302,6 +325,15 @@ def func_calcWKS():
 
 
 def readTestFile(filename):
+	"""
+	Takes a file name, extracts prime number, nth root of unity and stores all
+	test cases and targets in global variables.
+
+	Parameters
+	----------
+	filename 	: test case file name
+	
+	"""
 		with open("./"+filename) as fp:
 			allLINES = fp.read().splitlines()
 			totLines = 0
@@ -317,29 +349,33 @@ def readTestFile(filename):
 
 
 if __name__ == '__main__':
-
-	a = naiveNTT(7, 2**1, 6, [2, 6])
-
-	b = pac([2, 6], 7)
-
-	print (np.in1d(a, b))
-
-	a = naiveNTT(5, 2**2, 2, [1, 4, 0, 0])
-
-	b = pac([1, 4, 0, 0], 5)
-
-	print (np.in1d(a, b))
-
 	readTestFile("test.txt")
 
-	print ("STARTED")
+	print ("STARTED naiveNTT Test")
 	startTime = time.time()
 	fate = naiveNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES["CASE_0"])
 	endTime = time.time()
-	print (np.in1d(fate,TEST_ANSWERS["CASE_0"]))
+	print (np.in1d(fate, TEST_ANSWERS["CASE_0"]))
 	print ("DONE")
 	print(endTime - startTime)
 
+	print ("STARTED modexpNTT Test")
+	startTime = time.time()
+	fate = modexpNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES["CASE_0"])
+	endTime = time.time()
+	print (np.in1d(fate, TEST_ANSWERS["CASE_0"]))
+	print ("DONE")
+	k = endTime - startTime
+	print(k)
+
+	print ("STARTED Sympy NTT Test")
 	startTime = time.time()
 	z = pac(TEST_CASES["CASE_0"], TEST_CASE_PRIME)
-	print (np.in1d(z,fate))
+	endTime = time.time()
+	print (np.in1d(z, TEST_ANSWERS["CASE_0"]))
+	print ("DONE")
+	m = endTime - startTime
+	print(m)
+	print (k/m)
+	print ("COMPLETED")
+
