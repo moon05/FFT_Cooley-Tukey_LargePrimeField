@@ -4,11 +4,16 @@ import gmpy2
 from gmpy2 import mpz
 import math
 from sympy import ntt as pac
+import timeit
+from itertools import chain
+from collections import Counter
 
 hex_512_string = "F"*128
 hex_256_string = "F"*64
 MAX_512_integer = int(hex_512_string, 16)
 MAX_256_integer = int(hex_256_string, 16)
+
+BIG_PRIME = 1448710878603695229409412310732144622848441888753223448575120702981577542281415018652993561619563625768081760802164016332664868818287202677226268571177357443196189721711411095564550863916701456326047703907558905556769006452749568850893726964097212712534033673887482435571016493398875714661616695973805482073975013312603832180072496240990965064767802796335226649504512522482656310868574294571090894743593101737100996294180550347627991120402954521019478319594965583602635139406639554109668397505671888878121704968823589493631448107907114217361283249827317880226419193187177259109633935404301712464708823348328976497742932566121346081365525408595640468945290937758700039629256982005716182859284737841217145224064176914658186450842162070805962848366278043048270579195785338465402255311543317952316743397150239782344358067398630187697581974758378383164399938534007082923964046532198511555664094030236510446638373837514965653315445276132434900279652476100332956459885822293290144417509773544510283867826006224349987445172866722671938741506492171575030480586949013381712605577261029640924163986974030623538195577104997915377544237531482486437582261243814911374465420432886979360185662951101417810621647359742220813855302270079227324459422907061626612236531675332230997981115552142564940071988563230306482080972374909297566710962638028801
 
 # Combination of Carol Primes and Centered Traingular Primes
 PRIMES = [409, 571, 631, 829, 1489, 1999, 2341, 2971, 3529, 4621, 4789,\
@@ -85,19 +90,28 @@ def conv_rou(k, prime):
 	k 		: root of unity
 	
 	"""
-	rou = list()
+	rou = [[] for c in range(k)]
 	a = range(0, prime)
 	for i in a:
-		b = ( pow( mpz(i),mpz(k) ) % mpz(prime) == 1)
-		if b:
-			rou.append(i)
-		else:
-			pass
-	if len(rou) == 1:
-		return rou[0]
-	else:
-		print (rou)
-		return random.choice(rou)
+		print ("prime "+ str(i))
+		for j in range(k):
+			print ("power" + str(k))
+			b = ( (mpz(i)**mpz(j)) % mpz(prime) == 1)
+			if b:
+				rou[j].append(i)
+			else:
+				pass
+	retROU = []
+	# super_list = list(chain(*rou))
+	# for a in rou:
+	# 	super_list.remove(a)
+	# super_set = set(super_list)
+	# uniques = set(rou) - super_set
+	# print (sorted(uniques))
+	counts = Counter(chain.from_iterable(rou))
+	uniques = [k for k, c in counts.items() if c==1]
+	print (uniques)
+	return
 
 def calcWKS(k, w_k):
 	wk_list = list()
@@ -164,8 +178,8 @@ def naiveNTT(p, k, w_k, A):
 	if k == 1:
 		return A
 
-	X_even = naiveNTT(p, k//2, w_k[0], A[::2])
-	X_odd = naiveNTT(p, k//2, w_k[0], A[1::2])
+	X_even = naiveNTT(p, k//2, w_k[0]**2, A[::2])
+	X_odd = naiveNTT(p, k//2, w_k[0]**2, A[1::2])
 
 	for i in range(k//2):
 
@@ -175,17 +189,37 @@ def naiveNTT(p, k, w_k, A):
 		
 	return retA
 
+def NSquaredNTT(p, k, w_k, A):
+	W = [[] for c in range(k)]
+	for i in range(k):
+		tmp = []
+		for j in range(k):
+			tmp.append((2**(i*j))%p)
+		W[i] = tmp
+	retA = np.zeros(k)
+	for j in range(len(A)):
+		for i in range(k):
+			retA[j] += (W[j][i]*A[i]) % p
 
+	return retA
+
+def func1():
+	naiveNTT(5, 2**2, a, [1, 4, 0, 0])
+def func2():
+	NSquaredNTT(5, 2**2, 2, [1, 4, 0, 0])
 
 if __name__ == '__main__':
 	print ("Vector length 2")
-	a = (calcWKS(2, 6))
-	print (naiveNTT(7, 2**1, a, [2, 4]))
-	print (naiveNTT(7, 2**1, a, [2, 6]))
-	print ("Vector length 4")
+	# a = (calcWKS(2, 6))
+	# print (naiveNTT(7, 2**1, a, [2, 4]))
+	# print (naiveNTT(7, 2**1, a, [2, 6]))
+	# print ("Vector length 4")
+	# a = (calcWKS(4, 2))
 	a = (calcWKS(4, 2))
-	print (naiveNTT(11, 2**2, a, [2, 4, 6, 8]))
-	a = (calcWKS(4, 2))
-	print (naiveNTT(5, 2**2, a, [1, 4, 0, 0]))
+	# print (naiveNTT(5, 2**2, a, [1, 4, 0, 0]))
 	#test with sympy ntt
-	print (pac([2,4], 7))
+	# print (pac([2,4], 7))
+	# print (NSquaredNTT(5, 2**2, 2, [1, 4, 0, 0]))
+	print (conv_rou(20, 159))
+	# print (timeit.timeit(func1, number=10000))
+	# print (timeit.timeit(func2, number=10000))
