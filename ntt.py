@@ -7,6 +7,8 @@ from sympy import ntt as pac
 import timeit
 from itertools import chain
 from collections import Counter
+import time
+
 
 hex_512_string = "F"*128
 hex_256_string = "F"*64
@@ -48,10 +50,6 @@ def processCASE(strSuperList):
 	global TEST_CASES
 	global TEST_ANSWERS
 	s = "CASE_"
-	try:
-		assert len(strSuperList%2) == 0
-	except Exception:
-		print("Something is wrong with the test file")
 	for i in range(0,len(strSuperList),3):
 		if i is 0:
 			s+= str(i)
@@ -223,20 +221,32 @@ def naiveNTT(p, k, w_k, A):
 
 
 
+
+
+
+
 	retA = np.zeros(k)
 	if k == 1:
 		return A
 
-	X_even = naiveNTT(p, k//2, w_k[0]**2, A[::2])
-	X_odd = naiveNTT(p, k//2, w_k[0]**2, A[1::2])
+	X_even = naiveNTT(p, k//2, w_k**2, A[::2])
+
+	X_odd = naiveNTT(p, k//2, w_k**2, A[1::2])
 
 	for i in range(k//2):
 
-		retA[i] = (mpz( X_even[i] ) + ( ( w_k[i] ) * mpz( X_odd[i] ) )) % p
+		retA[i] = (( X_even[i] ) + ( ( w_k**(i) ) * ( X_odd[i] ) )) % p
 		
-		retA[i+k//2] = (mpz( X_even[i] ) + ( ( w_k[i+k//2] ) * mpz( X_odd[i] ) )) % p
+		retA[i+k//2] = (( X_even[i] ) + ( ( w_k**(i+k//2) ) * ( X_odd[i] ) )) % p
 		
 	return retA
+
+
+
+
+
+
+
 
 def modexpNTT(p, k, w_k, A):
 	retA = np.zeros(k)
@@ -302,37 +312,34 @@ def readTestFile(filename):
 			TEST_CASE_PRIME = mpz(int(allLINES.pop(0)))
 			TEST_CASE_UNITY = mpz(int(allLINES.pop(0)))
 			allLINES.pop(0)
-			print ("Length of file before processing {}".format(len(allLINES)))
 			processCASE(allLINES)
-			print ("Processing done")
 			return
 
 
 if __name__ == '__main__':
-	print ("Vector length 2")
-	# a = (calcWKS(2, 6))
-	# print (naiveNTT(7, 2**1, a, [2, 4]))
-	# print (naiveNTT(7, 2**1, a, [2, 6]))
-	# print ("Vector length 4")
-	# a = (calcWKS(4, 2))
-	a = (calcWKS(4, 2))
-	# print (naiveNTT(5, 2**2, a, [1, 4, 0, 0]))
-	#test with sympy ntt
-	# print (pac([2,4], 7))
-	# print (NSquaredNTT(5, 2**2, 2, [1, 4, 0, 0]))
-	# print (conv_rou(20, 159))
-	# print (timeit.timeit(func_naive, number=10000))
-	# print (timeit.timeit(func_pow, number=10000))
-	# print (timeit.timeit(func_nsquared, number=10000))
-	print (readTestFile("test.txt"))
-	# print (TEST_CASE_UNITY)
-	# print (b)
-	# print (TEST_CASES.keys())
-	# print (TEST_ANSWERS.keys())
-	# print (TEST_CASES["CASE_48"])
-	# print (len(CASE_1))
+
+	a = naiveNTT(7, 2**1, 6, [2, 6])
+
+	b = pac([2, 6], 7)
+
+	print (np.in1d(a, b))
+
+	a = naiveNTT(5, 2**2, 2, [1, 4, 0, 0])
+
+	b = pac([1, 4, 0, 0], 5)
+
+	print (np.in1d(a, b))
+
+	readTestFile("test.txt")
+
 	print ("STARTED")
-	b = calcWKS(TEST_CASE_K, TEST_CASE_UNITY)
-	print (timeit.timeit(func_calcWKS, number=10000))	
-	naiveNTT(TEST_CASE_PRIME, TEST_CASE_K, b, TEST_CASES["CASE_0"])
+	startTime = time.time()
+	fate = naiveNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES["CASE_0"])
+	endTime = time.time()
+	print (np.in1d(fate,TEST_ANSWERS["CASE_0"]))
 	print ("DONE")
+	print(endTime - startTime)
+
+	startTime = time.time()
+	z = pac(TEST_CASES["CASE_0"], TEST_CASE_PRIME)
+	print (np.in1d(z,fate))
