@@ -334,18 +334,18 @@ def readTestFile(filename):
 	filename 	: test case file name
 	
 	"""
-		with open("./"+filename) as fp:
-			allLINES = fp.read().splitlines()
-			totLines = 0
-			for line in fp:
-				totLines += 1
-			global TEST_CASE_PRIME
-			global TEST_CASE_UNITY
-			TEST_CASE_PRIME = mpz(int(allLINES.pop(0)))
-			TEST_CASE_UNITY = mpz(int(allLINES.pop(0)))
-			allLINES.pop(0)
-			processCASE(allLINES)
-			return
+	with open("./"+filename) as fp:
+		allLINES = fp.read().splitlines()
+		totLines = 0
+		for line in fp:
+			totLines += 1
+		global TEST_CASE_PRIME
+		global TEST_CASE_UNITY
+		TEST_CASE_PRIME = mpz(int(allLINES.pop(0)))
+		TEST_CASE_UNITY = mpz(int(allLINES.pop(0)))
+		allLINES.pop(0)
+		processCASE(allLINES)
+		return
 
 
 if __name__ == '__main__':
