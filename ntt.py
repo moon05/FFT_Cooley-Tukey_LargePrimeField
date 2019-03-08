@@ -4,6 +4,7 @@ import gmpy2
 from gmpy2 import mpz
 import math
 from sympy import ntt as pac
+from sympy.utilities.iterables import ibin
 import timeit
 from itertools import chain
 from collections import Counter
@@ -18,7 +19,7 @@ MAX_256_integer = int(hex_256_string, 16)
 BIG_512_bit_PRIME = 1448710878603695229409412310732144622848441888753223448575120702981577542281415018652993561619563625768081760802164016332664868818287202677226268571177357443196189721711411095564550863916701456326047703907558905556769006452749568850893726964097212712534033673887482435571016493398875714661616695973805482073975013312603832180072496240990965064767802796335226649504512522482656310868574294571090894743593101737100996294180550347627991120402954521019478319594965583602635139406639554109668397505671888878121704968823589493631448107907114217361283249827317880226419193187177259109633935404301712464708823348328976497742932566121346081365525408595640468945290937758700039629256982005716182859284737841217145224064176914658186450842162070805962848366278043048270579195785338465402255311543317952316743397150239782344358067398630187697581974758378383164399938534007082923964046532198511555664094030236510446638373837514965653315445276132434900279652476100332956459885822293290144417509773544510283867826006224349987445172866722671938741506492171575030480586949013381712605577261029640924163986974030623538195577104997915377544237531482486437582261243814911374465420432886979360185662951101417810621647359742220813855302270079227324459422907061626612236531675332230997981115552142564940071988563230306482080972374909297566710962638028801
 TEST_CASE_PRIME = 0
 TEST_CASE_UNITY = 0
-TEST_CASE_K = 1024
+TEST_CASE_K = 0
 TEST_CASES = dict()
 TEST_ANSWERS = dict()
 # Combination of Carol Primes and Centered Traingular Primes
@@ -256,6 +257,7 @@ def naiveNTT(p, k, w_k, A):
 		raise ValueError("Please enter an integer for k")
 
 	retA = np.empty(k, dtype=object)
+	# retA = [None for i in range(k)]
 	if k == 1:
 		return A
 
@@ -272,7 +274,9 @@ def naiveNTT(p, k, w_k, A):
 	return retA
 
 def modexpNTT(p, k, w_k, A):
-	retA = np.empty(k, dtype=object)
+	# retA = np.empty(k, dtype=object)
+	retA = [None for i in range(k)]
+	# A = [(x%p) for x in B]
 	if k == 1:
 		return A
 
@@ -300,6 +304,31 @@ def NSquaredNTT(p, k, w_k, A):
 			retA[j] += (W[j][i]*A[i]) % p
 
 	return retA
+
+# def bitReverseCopy(A):
+# 	B = [None for c in len(A)]
+# 	return B
+
+# def iterNTT(p, k, w_k, A):
+
+# 	retA = [None for i in range(k)]
+# 	# w = [1] * (k//2)
+# 	# for i in range(1, k//2):
+# 	# 	w[i] = w[i-1]*w_k % p
+# 	for s in range(int(math.log2(k))):
+# 		m = 2**s
+# 		wm = s
+# 		for k in range(0,k-1,m):
+# 			w = 1
+# 			for j in range(0,m//2-1):
+# 				t = w * retA[k + j + m//2]
+# 				u = retA[k + j]
+# 				retA[k + j] = u + t
+# 				retA[k + j + m//2] = u - t
+# 				w = w * wm
+# 	return retA
+		
+
 
 ###############################################################################
 ############################# Timing Functions ################################
@@ -341,41 +370,71 @@ def readTestFile(filename):
 			totLines += 1
 		global TEST_CASE_PRIME
 		global TEST_CASE_UNITY
+		global TEST_CASE_K
 		TEST_CASE_PRIME = mpz(int(allLINES.pop(0)))
 		TEST_CASE_UNITY = mpz(int(allLINES.pop(0)))
-		allLINES.pop(0)
+		TEST_CASE_K = (1<<int(allLINES.pop(0)))
 		processCASE(allLINES)
 		return
 
 
 if __name__ == '__main__':
-	readTestFile("test.txt")
-
-	print ("STARTED naiveNTT Test")
-	startTime = time.time()
-	fate = naiveNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES["CASE_0"])
-	endTime = time.time()
-	print (np.in1d(fate, TEST_ANSWERS["CASE_0"]))
-	print ("DONE")
-	print(endTime - startTime)
-
-	print ("STARTED modexpNTT Test")
-	startTime = time.time()
-	fate = modexpNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES["CASE_0"])
-	endTime = time.time()
-	print (np.in1d(fate, TEST_ANSWERS["CASE_0"]))
-	print ("DONE")
-	k = endTime - startTime
-	print(k)
+	# readTestFile("test.txt")
+	readTestFile("test2.txt")
+	print ("k: {}".format(TEST_CASE_K))
+	NetVec = len(TEST_ANSWERS.keys())
 
 	print ("STARTED Sympy NTT Test")
 	startTime = time.time()
-	z = pac(TEST_CASES["CASE_0"], TEST_CASE_PRIME)
+	for i in range(NetVec):
+		k = "CASE_" + str(i)
+		pac(TEST_CASES[k], TEST_CASE_PRIME)
 	endTime = time.time()
-	print (np.in1d(z, TEST_ANSWERS["CASE_0"]))
+	print ((endTime - startTime))
 	print ("DONE")
-	m = endTime - startTime
-	print(m)
-	print (k/m)
-	print ("COMPLETED")
+
+
+	print ("STARTED modexpNTT Test")
+	startTime = time.time()
+	for i in range(NetVec):
+		k = "CASE_" + str(i)
+		z = modexpNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES[k])
+		if (z != TEST_ANSWERS[k]):
+			print (False)
+	endTime = time.time()
+	print ((endTime - startTime))
+	print ("DONE")
+
+	# print ("STARTED naiveNTT Test")
+	# startTime = time.time()
+	# for i in range(9):
+	# 	k = "CASE_" + str(i)
+	# 	z = naiveNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES[k])
+	# 	if (z != TEST_ANSWERS[k]):
+	# 		print (False)
+	# endTime = time.time()
+	# print ((endTime - startTime))
+	# print ("DONE")
+
+	
+
+	# print ("STARTED modexpNTT Test")
+	# startTime = time.time()
+	# fate = modexpNTT(TEST_CASE_PRIME, TEST_CASE_K, TEST_CASE_UNITY, TEST_CASES["CASE_0"])
+	# endTime = time.time()
+	# print (np.in1d(fate, TEST_ANSWERS["CASE_0"]))
+	# print ("DONE")
+	# k = endTime - startTime
+	# print(k)
+
+	# print ("STARTED Sympy NTT Test")
+	# startTime = time.time()
+	# z = pac(TEST_CASES["CASE_0"], TEST_CASE_PRIME)
+	# endTime = time.time()
+	# print (np.in1d(z, TEST_ANSWERS["CASE_0"]))
+	# print ("DONE")
+	# m = endTime - startTime
+	# print(m)
+	# print (k/m)
+	# print ("COMPLETED")
 
